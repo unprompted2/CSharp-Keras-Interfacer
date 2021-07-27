@@ -47,4 +47,25 @@ namespace mnist.Properties
                     global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("mnist.Properties.Resources", typeof(Resources).Assembly);
                     resourceMan = temp;
                 }
-   
+                return resourceMan;
+            }
+        }
+
+        /// <summary>
+        ///   覆盖当前线程的 CurrentUICulture 属性
+        ///   使用此强类型的资源类的资源查找。
+        /// </summary>
+        [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
+        internal static global::System.Globalization.CultureInfo Culture
+        {
+            get
+            {
+                return resourceCulture;
+            }
+            set
+            {
+                resourceCulture = value;
+            }
+        }
+    }
+}
