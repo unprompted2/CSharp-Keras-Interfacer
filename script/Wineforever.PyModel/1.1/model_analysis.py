@@ -1,3 +1,4 @@
+
 import h5py
 from Wineforever_PyString import save_to_sheet
 from Wineforever_PyBar import Bar
@@ -53,33 +54,36 @@ if(tip=='fr'):
         if 'dense' in str(n):
             temp = model['model_weights']['dense_' + str(dense_count)]['dense_' + str(dense_count)]
             '''
-            for kernel
+            for weights
             '''
-            data = {}
-            bar = Bar('progress',temp['kernel:0'].shape[1] * temp['kernel:0'].shape[0])
-            for i in range(0,temp['kernel:0'].shape[1]):
-                data['kernel_' + str(i)] = []
-                for j in range(0,temp['kernel:0'].shape[0]):
-                    data['kernel_' + str(i)].append(str(temp['kernel:0'][j][i]))
+            data = []
+            len_0 = temp['kernel:0'].shape[0]
+            len_1 = temp['kernel:0'].shape[1]
+            bar = Bar('progress',len_0*len_1)
+            for i in range(0,len_0):
+                data_ = []
+                for j in range(0,len_1):
+                    data_.append(temp['kernel:0'][i][j])
                     bar.next()
-            print('dense_kernel_' + str(dense_count) + ' done!')
-            save_to_sheet(data,'Output\\'+'dense_' + str(dense_count) + '_kernel.wf')
+                data.append(data_)
+            Serialization(data, 'Output\\dense_'+str(dense_count) + '_weights.group')
+            print('dense_weights_' + str(dense_count) + ' done!')
             '''
             for bias
             '''
-            data = {}
-            bar = Bar('progress',temp['bias:0'].shape[0])
-            data['bias'] = []
-            for i in range(0,temp['bias:0'].shape[0]):
-                data['bias'].append(str(temp['bias:0'][i]))
+            data = []
+            len_0 = temp['bias:0'].shape[0]
+            bar = Bar('progress',len_0)
+            for i in range(0,len_0):
+                data.append(temp['bias:0'][i])
                 bar.next()
+            Serialization(data, 'Output\\dense_' + str(dense_count) + '_bias.group')
             print('dense_bias_' + str(dense_count) + ' done!')
-            save_to_sheet(data,'Output\\'+'dense_' + str(dense_count) + '_bias.wf')
             dense_count = dense_count + 1
         if 'conv2d' in str(n):
             temp = model['model_weights']['conv2d_' + str(conv_count)]['conv2d_' + str(conv_count)]
             '''
-            for kernel
+            for weights
             '''
             data = []
             len_0 = temp['kernel:0'].shape[0]
@@ -99,19 +103,19 @@ if(tip=='fr'):
                         data__.append(data___)
                     data_.append(data__)
                 data.append(data_)
-            Serialization(data, 'Output\\conv_'+str(conv_count) + '_kernel.group')
-            print('conv_kernel_' + str(conv_count) + ' done!')
+            Serialization(data, 'Output\\conv_'+str(conv_count) + '_weights.group')
+            print('conv_weights_' + str(conv_count) + ' done!')
             '''
             for bias
             '''
-            data = {}
-            bar = Bar('progress',len(temp['bias:0']))
-            data['bias'] = []
-            for i in range(0,temp['bias:0'].shape[0]):
-                data['bias'].append(str(temp['bias:0'][i]))
+            data = []
+            len_0 = temp['bias:0'].shape[0]
+            bar = Bar('progress',len_0)
+            for i in range(0,len_0):
+                data.append(temp['bias:0'][i])
                 bar.next()
+            Serialization(data, 'Output\\conv_' + str(conv_count) + '_bias.group')
             print('conv_bias_' + str(conv_count) + ' done!')
-            save_to_sheet(data,'Output\\'+'conv_' + str(conv_count) + '_bias.wf')
             conv_count = conv_count + 1
     print('done!')
 
