@@ -688,4 +688,254 @@ namespace Wineforever.Neuralnet
                 if (mod == "channel_first")
                 {
                     __kernel_Weights_data__ = __kernel_Weights_data__ == null ? Wineforever.String.client.Deserialization(FileName) : __kernel_Weights_data__;
-                    if (this.Input.G
+                    if (this.Input.GetType() == typeof(List<float[,]>))
+                    {
+                        for (int n = 0; n < this.__kernelNum__; n++)
+                        {
+                            var kernel = new float[Size, Size, __kernel_Weights_data__.GetLength(2)];
+                            for (int i = 0; i < Size; i++)
+                                for (int j = 0; j < Size; j++)
+                                    for (int k = 0; k < __kernel_Weights_data__.GetLength(2); k++)
+                                    {
+                                        kernel[i, j, k] = __kernel_Weights_data__[k, i, j, n];
+                                    }
+                            this.__weights__.Add(kernel);
+                        }
+                    }
+                    else if ((this.Input.GetType() == typeof(ConvLayer)))
+                    {
+                        for (int n = 0; n < this.__kernelNum__; n++)
+                        {
+                            var kernel = new float[Size, Size, __kernel_Weights_data__.GetLength(2)];
+                            for (int i = 0; i < Size; i++)
+                                for (int j = 0; j < Size; j++)
+                                    for (int k = 0; k < __kernel_Weights_data__.GetLength(2); k++)
+                                    {
+                                        kernel[i, j, k] = __kernel_Weights_data__[k, i, j, n];
+                                    }
+                            this.__weights__.Add(kernel);
+                        }
+                    }
+                    this.Father.__isInitialization__ = true;
+                }
+                else if (mod == "channel_last")
+                {
+                    __kernel_Weights_data__ = __kernel_Weights_data__ == null ? Wineforever.String.client.Deserialization(FileName) : __kernel_Weights_data__;
+                    if (this.Input.GetType() == typeof(List<float[,]>))
+                    {
+                        for (int n = 0; n < this.__kernelNum__; n++)
+                        {
+                            var kernel = new float[Size, Size, __kernel_Weights_data__.GetLength(2)];
+                            for (int i = 0; i < Size; i++)
+                                for (int j = 0; j < Size; j++)
+                                    for (int k = 0; k < __kernel_Weights_data__.GetLength(2); k++)
+                                    {
+                                        kernel[i, j, k] = __kernel_Weights_data__[i, j, k, n];
+                                    }
+                            this.__weights__.Add(kernel);
+                        }
+                    }
+                    else if ((this.Input.GetType() == typeof(ConvLayer)))
+                    {
+                        for (int n = 0; n < this.__kernelNum__; n++)
+                        {
+                            var kernel = new float[Size, Size, __kernel_Weights_data__.GetLength(2)];
+                            for (int i = 0; i < Size; i++)
+                                for (int j = 0; j < Size; j++)
+                                    for (int k = 0; k < __kernel_Weights_data__.GetLength(2); k++)
+                                    {
+                                        kernel[i, j, k] = __kernel_Weights_data__[i, j, k, n];
+                                    }
+                            this.__weights__.Add(kernel);
+                        }
+                    }
+                    this.Father.__isInitialization__ = true;
+                }
+            }
+            else __kernelPath__ = FileName;
+        }
+        public new void LoadBias(string FileName)
+        {
+            this.__bias__ = new List<float>();
+            if (this.Input != null)
+            {
+                __kernel_Bias_data__ = __kernel_Bias_data__ == null ? Wineforever.String.client.Deserialization(FileName) : __kernel_Bias_data__;
+                this.__bias__ = new List<float>();
+                for (int i = 0; i < __kernel_Bias_data__.GetLength(0); i++)
+                {
+                    this.__bias__.Add(__kernel_Bias_data__[i]);
+                }
+                this.Father.__isInitialization__ = true;
+            }
+            else { __biasPath__ = FileName; }
+        }
+    }
+    //平化层
+    public class FlattenLayer : Layer
+    {
+        //私有字段
+        internal int __outputNum__ = 0;
+        //公有字段
+        public FlattenLayer(dynamic input = null, string name = null)
+        {
+            //---- 创建层 ----
+            this.Name = name == null ? "Flatten" : name;
+            this.Input = input;
+            //---- ----
+        }
+        //公有方法
+        public new List<float> GetOutput()
+        {
+            //耗时计算
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            List<float> output = new List<float>();
+            //平化操作
+            if (this.Input != null)
+                if (this.Input.GetType() == typeof(ConvLayer))
+                {
+                    ConvLayer input = Input;
+                    var inputs = input.GetOutput();
+                    for (int n = 0; n < inputs.Count; n++)
+                        for (int i = 0; i < inputs[n].GetLength(0); i++)
+                            for (int j = 0; j < inputs[n].GetLength(1); j++)
+                                output.Add(inputs[n][i, j]);
+                }
+            //打印
+            stopwatch.Stop();
+            if (this.Father.__debug__) Console.WriteLine("{0}用时(毫秒)：{1}", this.Name, stopwatch.ElapsedMilliseconds);
+            return output;
+        }
+    }
+    //---- 系统类 ----
+    public class System
+    {
+        //公有字段
+        public System(string name = "sys", System input = null)
+        {
+            //---- 创建系统 ----
+            this.Name = name == "" ? "Undefined" : name;
+            this.input = input;
+            //---- ----
+            this.Layers = new List<Layer>();
+            this.Update();
+        }
+        public List<Layer> Layers { get; }//层群
+        //私有字段
+        internal string Name { get; }//标识名
+        internal dynamic input { get; set; }//输入
+        internal List<float> errors { get; set; }
+        internal float Rand(float min, float max)
+        {
+            return (float)rand.NextDouble() * (max - min) + min;
+        }
+        internal bool __isInitialization__ = false;
+        internal float __loss__ = 0;//总误差量度
+        internal bool __debug__ = false;
+        private Random rand = new Random();
+        //超参数
+        internal float learning_rate = 0.01f;//学习率
+        internal float dropout_rate = 0.2f;//遗忘概率
+        //创建层
+        public void Create(int neuron_num, string name = "dense", string activation = "relu", string optimizer = "GD")
+        {
+            DenseLayer layer;
+            if (this.Layers.Count == 0) layer = new DenseLayer(neuron_num, null, name, activation, optimizer);
+            else
+                layer = new DenseLayer(neuron_num, this.Layers.Last(), name, activation, optimizer);
+            Add(layer);
+        }
+        public void Create(int kernel_num, int kernel_size, int step = 1, string name = "conv", string padding = "same", string activation = "relu", string optimizer = "GD")
+        {
+            ConvLayer layer;
+            if (this.Layers.Count == 0) layer = new ConvLayer(kernel_num, kernel_size, step, null, name, padding, activation, optimizer);
+            else
+                layer = new ConvLayer(kernel_num, kernel_size, step, this.Layers.Last(), name, padding, activation, optimizer);
+            Add(layer);
+        }
+        public void Create(string name = "flatten")
+        {
+            FlattenLayer layer;
+            if (this.Layers.Count == 0) layer = new FlattenLayer(null, name);
+            else
+                layer = new FlattenLayer(this.Layers.Last(), name);
+            Add(layer);
+        }
+        //添加层
+        public void Add(DenseLayer layer)
+        {
+            this.Layers.Add(layer);
+            layer.Father = this;//设置父对象
+            Update();
+        }
+        public void Add(ConvLayer layer)
+        {
+            this.Layers.Add(layer);
+            layer.Father = this;//设置父对象
+            Update();
+        }
+        public void Add(FlattenLayer layer)
+        {
+            this.Layers.Add(layer);
+            layer.Father = this;//设置父对象
+            Update();
+        }
+        //删除层
+        public void Remove(Layer layer)
+        {
+            this.Layers.Remove(layer);
+            layer.Father = null;//撤销关系
+            if (this.Layers.Count > 0) Update();
+        }
+        //输出
+        public dynamic GetOutput()
+        {
+            return Layers.Last().GetOutput();
+        }
+        //设置系统输入
+        public void Input(System system)
+        {
+            this.input = system;
+            this.Layers.First().Input = system;
+            Update();
+        }
+        public void Input(List<float> samples)
+        {
+            this.input = samples;
+            this.Layers.First().Input = samples;
+            Update();
+        }
+        public void Input(List<float[,]> samples)
+        {
+            this.input = samples;
+            this.Layers.First().Input = samples;
+            Update();
+        }
+        //私有方法
+        internal void Update()//更新连接
+        {
+            if (input != null)
+            {
+                //如果存在平化层，对其后层进行初始化
+                for (int i = 0; i < Layers.Count; i++)
+                {
+                    if (Layers[i].GetType() == typeof(FlattenLayer) && Layers[Math.Min(i + 1, Layers.Count - 1)].GetType() == typeof(DenseLayer))
+                    {
+                        int num = 0;
+                        DenseLayer denseLayer = (Layers[Math.Min(i + 1, Layers.Count - 1)] as DenseLayer);
+                        Layer preLayer = Layers[Math.Max(i - 1, 0)];
+                        if (preLayer.GetType() == typeof(ConvLayer))
+                        {
+                            num = 1;
+                            num *= (preLayer as ConvLayer).__kernelNum__;
+                        }
+                        else if (preLayer.GetType() == typeof(DenseLayer))
+                        {
+                            num = 1;
+                            num *= (preLayer as DenseLayer).__neurons__;
+                        }
+                        if (input.GetType() == typeof(List<float>))
+                        {
+                            num *= (input as List<float>).Count;
+                        }
+                        else if (input.GetType() == typeof(float
