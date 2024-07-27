@@ -938,4 +938,108 @@ namespace Wineforever.Neuralnet
                         {
                             num *= (input as List<float>).Count;
                         }
-                        else if (input.GetType() == typeof(float
+                        else if (input.GetType() == typeof(float[,]))
+                        {
+                            num *= (input as float[,]).GetLength(0) * (input as float[,]).GetLength(1);
+                        }
+                        else if (input.GetType() == typeof(List<float[,]>))
+                        {
+                            num *= (input as List<float[,]>)[0].GetLength(0) * (input as List<float[,]>)[0].GetLength(1);
+                        }
+                        (Layers[i] as FlattenLayer).__outputNum__ = num;
+                        denseLayer.LoadKernel(denseLayer.__kernelPath__);
+                        denseLayer.LoadBias(denseLayer.__biasPath__);
+                        break;
+                    }
+                }
+                if (input.GetType() == typeof(System))
+                {
+                    if (Layers.First().GetType() == typeof(DenseLayer))
+                    {
+                        var layer = Layers.First() as DenseLayer;
+                        layer.Input = (this.input.Layers[this.input.Layers.Count - 1] as DenseLayer).__neurons__;
+                    }
+                }
+                else if (input.GetType() == typeof(List<float>))
+                {
+                    if (Layers.First().GetType() == typeof(DenseLayer))
+                    {
+                        var layer = Layers.First() as DenseLayer;
+                        layer.Input = input;
+                    }
+                }
+                else if (input.GetType() == typeof(List<float[,]>))
+                {
+                    if (Layers.First().GetType() == typeof(ConvLayer))
+                    {
+                        var layer = Layers.First() as ConvLayer;
+                        layer.Input = input;
+                    }
+                }
+            }
+            for (int i = 0; i < Layers.Count; i++)
+            {
+                if (Layers[i].GetType() == typeof(ConvLayer) && Layers[i].Input != null && (Layers[i] as ConvLayer).__kernelPath__ != "")
+                {
+                    Layers[i].LoadKernel((Layers[i] as ConvLayer).__kernelPath__);
+                }
+                if (Layers[i].GetType() == typeof(ConvLayer) && Layers[i].Input != null && (Layers[i] as ConvLayer).__biasPath__ != "")
+                {
+                    Layers[i].LoadBias((Layers[i] as ConvLayer).__biasPath__);
+                }
+            }
+        }
+        //打印
+        public void Print()
+        {
+            Console.WriteLine(" -- System Name:{0}", this.Name);
+            for (int i = 0; i < this.Layers.Count; i++)
+            {
+                Console.WriteLine(" ------ Layer Name:{0}", this.Layers[i].Name);
+                var layer = Layers[i];
+                if (layer.GetType() == typeof(DenseLayer))
+                {
+                    for (int j = 0; j < (layer as DenseLayer).__neurons__; j++)
+                    {
+                        Console.WriteLine(" ---------- Neuron Name:{0}", (layer as DenseLayer).Name + "{" + j.ToString() + "}");
+                    }
+                }
+                else if (layer.GetType() == typeof(ConvLayer))
+                {
+                    for (int j = 0; j < (layer as ConvLayer).__kernelNum__; j++)
+                    {
+                        Console.WriteLine(" ---------- Kernel Name:{0}", (layer as ConvLayer).Name + "{" + j.ToString() + "}");
+                    }
+                }
+            }
+        }
+        //读取
+        public void Load(string Path)
+        {
+            int conv_num = 1;
+            int dense_num = 1;
+            for (int i = 0; i < Layers.Count; i++)
+            {
+                if (Layers[i].GetType() == typeof(ConvLayer))
+                {
+                    var layer = Layers[i];
+                    layer.LoadKernel(Path + "\\conv_" + conv_num.ToString() + "_weights.group");
+                    layer.LoadBias(Path + "\\conv_" + conv_num.ToString() + "_bias.group");
+                    conv_num++;
+                }
+                else if (Layers[i].GetType() == typeof(DenseLayer))
+                {
+                    var layer = Layers[i];
+                    layer.LoadKernel(Path + "\\dense_" + dense_num.ToString() + "_weights.group");
+                    layer.LoadBias(Path + "\\dense_" + dense_num.ToString() + "_bias.group");
+                    dense_num++;
+                }
+            }
+        }
+        //调试模式
+        public void Debug()
+        {
+            __debug__ = true;
+        }
+    }
+}
